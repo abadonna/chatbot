@@ -37,5 +37,5 @@ Return bot object
 ### bot.say(input)
 return bot's answer and segue (optional)
 
-##Reference
+## Reference
 TODO

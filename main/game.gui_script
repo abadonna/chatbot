@@ -5,9 +5,6 @@ local chat_text = ""
 local input_text = ""
 local has_cursor = false
 
-local uid = ""
-local log = {}
-
 local function cursor(self, node)
 	if has_cursor then
 		has_cursor = false

@@ -100,11 +100,6 @@ function on_message(self, message_id, message, sender)
 		gui.animate(self.current, "color.w", 0, gui.EASING_LINEAR, 0.25)
 		self.current = self.current == self.girl_1 and self.girl_2 or self.girl_1
 		load_image(self.current, message.image)
-		
-		if message.image == "final" then
-			print_girl(self.text_girl, gui.get_text(self.progress) .. " completed", 3)
-			send_log()
-		end
 	
 	elseif message_id == hash("sag") then
 		sys.open_url("http://sexandglory.com?game=chatbot")
@@ -148,8 +143,7 @@ function on_input(self, action_id, action)
 				print_girl(self.text_girl, string2, 2.5)
 			end
 		else
-			 print_girl(self.text_girl, "THE END - " .. gui.get_text(self.progress) .. " completed")
-			 send_log()
+			print_girl(self.text_girl, "THE END")
 		end
 		
 		input_text = ""

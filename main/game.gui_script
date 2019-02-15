@@ -1,0 +1,187 @@
+CHAT = require "chatbot.bot"
+GIRL = require "fotoset"
+
+local chat_text = ""
+local input_text = ""
+local has_cursor = false
+
+local uid = ""
+local log = {}
+
+local function cursor(self, node)
+	if has_cursor then
+		has_cursor = false
+		gui.set_text(self.input, input_text)
+	else
+		has_cursor = true
+		gui.set_text(self.input, input_text .. "_")
+	end
+	gui.animate(self.input, "rotation.x", 0, gui.EASING_LINEAR, 0.5, 0, cursor)
+end
+
+local function print_girl(node, text, delay)
+	if delay then
+		gui.animate(node, "rotation.z", 0, gui.EASING_LINEAR, delay, 0, function()
+			print_girl(node, text)
+		end)
+		return
+	end
+	gui.animate(node, "color.w", 0, gui.EASING_LINEAR, 0.5, 0)
+	gui.animate(node, "position.y", 100, gui.EASING_LINEAR, 0.5, 0, function()
+		gui.set_text(node, text)
+		gui.set_position(node, vmath.vector3(17, 120, 0))
+		gui.animate(node, "color.w", 1, gui.EASING_LINEAR, 0.5, 0.5)
+		gui.animate(node, "position.y", 110, gui.EASING_LINEAR, 0.5, 0.5)
+	end)
+end
+
+local function print_player(node, text)
+	gui.animate(node, "color.w", 0, gui.EASING_LINEAR, 0.5, 0)
+	gui.animate(node, "position.y", 70, gui.EASING_LINEAR, 0.5, 0, function()
+		gui.set_text(node, text)
+		gui.set_position(node, vmath.vector3(345, 50, 0))
+		gui.animate(node, "color.w", 1, gui.EASING_LINEAR, 0.5)
+		gui.animate(node, "position.y", 60, gui.EASING_LINEAR, 0.5)
+	end)
+end
+
+local function load_image(node, key)
+	local set = GIRL[key]
+	local path = "/images/" .. set[math.random(#set)] .. ".jpg"
+	local res = sys.load_resource(path)
+	if not res then
+		return
+	end
+	local img = image.load(res)
+	local name = tostring(gui.get_id(node))
+
+	if gui.get_texture(node) == hash("") then
+		gui.new_texture(name, img.width, img.height, img.type, img.buffer)
+		gui.set_texture(node, name)
+	else
+		gui.set_texture_data(name, img.width, img.height, img.type, img.buffer)
+	end
+
+	gui.animate(node, "color.w", 1, gui.EASING_LINEAR, 0.25)
+end
+
+function init(self)
+	msg.post(".", "acquire_input_focus")
+	
+	self.output = gui.get_node("output")
+	self.input = gui.get_node("input")
+	self.text_girl = gui.get_node("text_girl")
+	self.text_player = gui.get_node("text_player")
+	self.girl_1 = gui.get_node("girl1")
+	self.girl_2 = gui.get_node("girl2")
+	self.current = self.girl_1
+	
+	self.fade = gui.get_node("fade")
+	self.restart = gui.get_node("restart")
+	
+	gui.set_color(self.fade, vmath.vector4(0, 0, 0, 0))
+	gui.set_color(self.restart, vmath.vector4(1, 1, 1, 0))
+	
+	local data = require "sample_claire"
+	self.bot = CHAT.init(data) -- you can pass custom intents here as well
+	--self.bot = CHAT.init() - to run simple sample script
+
+	print_girl(self.text_girl, self.bot.say())
+	gui.animate(self.input, "rotation.x", 0, gui.EASING_LINEAR, 0.5, 0, cursor)
+end
+
+
+function final(self)
+	msg.post(".", "release_input_focus")
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("girl") then
+		gui.animate(self.current, "color.w", 0, gui.EASING_LINEAR, 0.25)
+		self.current = self.current == self.girl_1 and self.girl_2 or self.girl_1
+		load_image(self.current, message.image)
+		
+		if message.image == "final" then
+			print_girl(self.text_girl, gui.get_text(self.progress) .. " completed", 3)
+			send_log()
+		end
+	
+	elseif message_id == hash("sag") then
+		sys.open_url("http://sexandglory.com?game=chatbot")
+	
+	elseif message_id == hash("restart") then
+		gui.animate(self.fade, "color.w", 0.8, gui.EASING_LINEAR, 0.5)
+		gui.animate(self.restart, "color.w", 1, gui.EASING_LINEAR, 0.5, 1.5)
+		
+		self.is_menu = true
+	end
+end
+
+function on_input(self, action_id, action)
+	if action_id == hash("text") then
+		if action.text:match("[%c%s]") then
+			return
+		end
+		input_text = input_text .. action.text
+		gui.set_text(self.input, input_text)
+		msg.post("#click", "play_sound", {gain = 1})
+	
+	elseif action_id == hash("space") and action.pressed then
+		input_text = input_text .. " "
+		gui.set_text(self.input, input_text)
+		msg.post("#click", "play_sound", {gain = 1})
+		
+	elseif action_id == hash("delete") and action.pressed and #input_text > 0 then
+		input_text = input_text:sub(1, #input_text - 1)
+		gui.set_text(self.input, input_text)
+		msg.post("#click", "play_sound", {gain = 1})
+		
+	elseif action_id == hash("enter") and action.pressed and #input_text > 0 then		
+		print_player(self.text_player, input_text)
+		local string1, string2 = self.bot.say(input_text)
+		msg.post("#click", "play_sound", {gain = 1})
+		msg.post("#message", "play_sound", {gain = 0.2, delay = 0.5})
+		
+		if string1 then
+			print_girl(self.text_girl, string1)
+			if string2 then
+				print_girl(self.text_girl, string2, 2.5)
+			end
+		else
+			 print_girl(self.text_girl, "THE END - " .. gui.get_text(self.progress) .. " completed")
+			 send_log()
+		end
+		
+		input_text = ""
+		gui.set_text(self.input, input_text)
+	
+	elseif action_id == nil and self.is_menu then
+		local node = nil
+		if gui.pick_node(self.restart, action.x, action.y)  then
+			node = self.restart
+		end
+		
+		if self.menu_item ~= node then
+			if node then
+				gui.animate(node, "color", vmath.vector4(1,1,0,1), gui.EASING_LINEAR, 0.1)
+				gui.animate(node, "scale", vmath.vector3(3.2,3.2,1), gui.EASING_LINEAR, 0.2)
+			end
+			if self.menu_item then
+				gui.animate(self.menu_item, "color", vmath.vector4(1,1,1,1), gui.EASING_LINEAR, 0.1)
+				gui.animate(self.menu_item, "scale", vmath.vector3(3,3,1), gui.EASING_LINEAR, 0.2)
+			end
+		end
+		
+		self.menu_item = node
+		
+	elseif action_id == hash("click") and action.pressed and self.is_menu then
+		if gui.pick_node(self.restart, action.x, action.y)  then
+			self.is_menu = false
+			gui.animate(self.fade, "color.w", 0, gui.EASING_LINEAR, 0.5)
+			gui.animate(self.restart, "color.w", 0, gui.EASING_LINEAR, 0.5)
+			
+			gui.animate(self.menu_item, "scale", vmath.vector3(3,3,1), gui.EASING_LINEAR, 0.2)
+			self.menu_item = nil
+		end
+	end
+end

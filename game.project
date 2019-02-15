@@ -1,0 +1,36 @@
+[project]
+title = ChatBot
+version = 1.0
+custom_resources = images/
+
+[bootstrap]
+main_collection = /main/main.collectionc
+render = /main/custom.renderc
+
+[input]
+game_binding = /input/game.input_bindingc
+
+[display]
+width = 360
+height = 540
+high_dpi = 1
+
+[physics]
+scale = 0.02
+
+[script]
+shared_state = 1
+
+[html5]
+htmlfile = /html/index.html
+splash_image = /html/splash.jpg
+
+[android]
+package = com.ktulhusolutions.chatbot
+
+[osx]
+bundle_identifier = chatbot.ktulhu
+
+[library]
+include_dirs = chatbot
+

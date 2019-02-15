@@ -32,7 +32,8 @@ answer, segue = bot.say("optional input")
 ## API
 ### init(data, library)
 Sample chat will be loaded if **data** is nil, build-in intent library will be used if **library** is nil
-Return bot object
+
+Returns bot object
 
 ### bot.say(input)
 return bot's answer and segue (optional)
